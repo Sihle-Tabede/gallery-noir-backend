@@ -3,11 +3,10 @@ const router = express.Router();
 const contactController = require('../controllers/contactController');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
+const { submissionLimiter } = require('../middleware/rateLimiters');
 
-// Public
-router.post('/', contactController.create);
+router.post('/', submissionLimiter, contactController.create);
 
-// Admin-only
 router.get('/', auth, admin, contactController.getAll);
 router.get('/:id', auth, admin, contactController.getById);
 router.delete('/:id', auth, admin, contactController.delete);

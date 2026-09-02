@@ -1,40 +1,59 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
+const app = require('./app');
+const db = require('./config/db');
+const env = require('./config/env');
 
-// Load environment variables from .env
-dotenv.config();
+let server;
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const startupErrorMessage = (error) => {
+    if (error.message?.trim()) return error.message;
+    if (error.code === 'ECONNREFUSED') {
+        return env.database.url
+            ? 'The configured PostgreSQL service refused the connection'
+            : 'Connection refused at ' + env.database.host + ':' + env.database.port;
+    }
+    return error.code || 'Unknown PostgreSQL connection error';
+};
 
-// --- Middleware ---
-app.use(cors());
-app.use(express.json());
+const start = async () => {
+    await db.ping();
 
-// --- Import Routes ---
-const authRoutes = require('./routes/authRoutes');
-const artworkRoutes = require('./routes/artworkRoutes');
-const productRoutes = require('./routes/productRoutes');
-const blogRoutes = require('./routes/blogRoutes');
-const inquiryRoutes = require('./routes/inquiryRoutes');
-const contactRoutes = require('./routes/contactRoutes');
-const orderRoutes = require('./routes/orderRoutes');
+    server = app.listen(env.port, () => {
+        console.log('Gallery Noir API listening on port ' + env.port + ' (' + env.nodeEnv + ')');
+    });
+};
 
-// --- Use Routes (Mount to API paths) ---
-app.use('/api/auth', authRoutes);
-app.use('/api/artworks', artworkRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/blog', blogRoutes);
-app.use('/api/inquiries', inquiryRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/orders', orderRoutes);
+const shutdown = (signal) => {
+    console.log(signal + ' received; shutting down gracefully');
 
-// --- Import & Use Error Handler (must be AFTER all routes) ---
-const errorHandler = require('./middleware/errorHandler');
-app.use(errorHandler);
+    const forceExit = setTimeout(() => {
+        console.error('Graceful shutdown timed out');
+        process.exit(1);
+    }, 10000);
+    forceExit.unref();
 
-// --- Start Server ---
-app.listen(PORT, () => {
-    console.log(`Gallery-Noir backend running on http://localhost:${PORT}`);
+    const closeDatabase = async () => {
+        try {
+            await db.end();
+            process.exit(0);
+        } catch (error) {
+            console.error('Database shutdown failed:', error.message);
+            process.exit(1);
+        }
+    };
+
+    if (server) {
+        server.close(closeDatabase);
+    } else {
+        closeDatabase();
+    }
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+start().catch(async (error) => {
+    console.error('Gallery Noir API failed to connect to PostgreSQL:', startupErrorMessage(error));
+    console.error('Check DATABASE_URL or the DB_* settings, then run npm run db:setup.');
+    await db.end().catch(() => {});
+    process.exitCode = 1;
 });

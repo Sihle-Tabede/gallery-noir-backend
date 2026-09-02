@@ -1,88 +1,115 @@
 const Artwork = require('../models/artworkModel');
+const { badRequest, notFound } = require('../utils/errors');
+const toSlug = require('../utils/slug');
+const validation = require('../utils/validation');
 
-// GET /api/artworks
-exports.getAll = async (req, res, next) => {
-    try {
-        const artworks = await Artwork.getAll();
-        res.status(200).json(artworks);
-    } catch (error) {
-        next(error);
+const statuses = ['available', 'sold', 'private'];
+const categories = ['painting', 'drawing', 'mixed-media', 'photography', 'sculpture', 'other'];
+
+const parseArtwork = (body, partial = false) => {
+    const data = {};
+    const has = (key) => Object.hasOwn(body, key);
+
+    if (!partial || has('title')) {
+        data.title = validation.requiredString(body.title, 'Title', { max: 180 });
     }
-};
-
-// GET /api/artworks/featured (optional helper for your hero)
-exports.getFeatured = async (req, res, next) => {
-    try {
-        const limit = parseInt(req.query.limit) || 4;
-        const featured = await Artwork.getFeatured(limit);
-        res.status(200).json(featured);
-    } catch (error) {
-        next(error);
+    if (!partial || has('slug')) {
+        data.slug = validation.slug(body.slug || toSlug(data.title), 'Slug');
     }
-};
-
-// GET /api/artworks/:id
-exports.getById = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const artwork = await Artwork.getById(id);
-        if (!artwork) {
-            return res.status(404).json({ message: 'Artwork not found' });
-        }
-        res.status(200).json(artwork);
-    } catch (error) {
-        next(error);
+    if (!partial || has('image_url')) {
+        data.image_url = validation.requiredString(body.image_url, 'Image URL', { max: 500 });
     }
-};
-
-// POST /api/artworks (Admin only)
-exports.create = async (req, res, next) => {
-    try {
-        const { title, description, image_url, price, is_available } = req.body;
-        // Basic validation
-        if (!title || !image_url) {
-            return res.status(400).json({ message: 'Title and image_url are required' });
-        }
-        const newId = await Artwork.create({
-            title,
-            description,
-            image_url,
-            price: price || 0.00,
-            is_available
+    if (has('description')) {
+        data.description = validation.optionalString(body.description, 'Description', { max: 5000 });
+    } else if (!partial) {
+        data.description = null;
+    }
+    if (has('medium')) {
+        data.medium = validation.optionalString(body.medium, 'Medium', { max: 180 });
+    } else if (!partial) {
+        data.medium = null;
+    }
+    if (has('category')) {
+        data.category = validation.oneOf(body.category, 'Category', categories);
+    } else if (!partial) {
+        data.category = 'painting';
+    }
+    if (has('year')) {
+        data.year = validation.integer(body.year, 'Year', {
+            min: 1900,
+            max: new Date().getFullYear() + 1
         });
-        const created = await Artwork.getById(newId);
-        res.status(201).json(created);
-    } catch (error) {
-        next(error);
+    } else if (!partial) {
+        data.year = new Date().getFullYear();
     }
+    if (has('dimensions')) {
+        data.dimensions = validation.optionalString(body.dimensions, 'Dimensions', { max: 180 });
+    } else if (!partial) {
+        data.dimensions = null;
+    }
+    if (has('price')) {
+        data.price = validation.money(body.price, 'Price', { allowNull: true });
+    } else if (!partial) {
+        data.price = null;
+    }
+    if (has('status')) {
+        data.status = validation.oneOf(body.status, 'Status', statuses);
+    } else if (has('is_available')) {
+        data.status = validation.boolean(body.is_available, true) ? 'available' : 'sold';
+    } else if (!partial) {
+        data.status = 'available';
+    }
+    if (has('featured')) {
+        data.featured = validation.boolean(body.featured, false);
+    } else if (!partial) {
+        data.featured = false;
+    }
+    if (has('display_order')) {
+        data.display_order = validation.integer(body.display_order, 'Display order', {
+            min: 0,
+            max: 100000
+        });
+    } else if (!partial) {
+        data.display_order = 0;
+    }
+
+    return data;
 };
 
-// PUT /api/artworks/:id (Admin only)
-exports.update = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { title, description, image_url, price, is_available } = req.body;
-        const success = await Artwork.update(id, { title, description, image_url, price, is_available });
-        if (!success) {
-            return res.status(404).json({ message: 'Artwork not found or nothing to update' });
-        }
-        const updated = await Artwork.getById(id);
-        res.status(200).json(updated);
-    } catch (error) {
-        next(error);
-    }
+exports.getAll = async (req, res) => {
+    const category = req.query.category
+        ? validation.oneOf(req.query.category, 'Category', categories)
+        : null;
+    res.json(await Artwork.getAll(category));
 };
 
-// DELETE /api/artworks/:id (Admin only)
-exports.delete = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const success = await Artwork.delete(id);
-        if (!success) {
-            return res.status(404).json({ message: 'Artwork not found' });
-        }
-        res.status(200).json({ message: 'Artwork deleted successfully' });
-    } catch (error) {
-        next(error);
+exports.getFeatured = async (req, res) => {
+    const limit = validation.integer(req.query.limit || 4, 'Limit', { min: 1, max: 12 });
+    res.json(await Artwork.getFeatured(limit));
+};
+
+exports.getById = async (req, res) => {
+    const artwork = await Artwork.getById(validation.identifier(req.params.id));
+    if (!artwork) throw notFound('Artwork not found');
+    res.json(artwork);
+};
+
+exports.create = async (req, res) => {
+    const id = await Artwork.create(parseArtwork(req.body));
+    res.status(201).json(await Artwork.getById(id));
+};
+
+exports.update = async (req, res) => {
+    const id = validation.identifier(req.params.id);
+    const data = parseArtwork(req.body, true);
+    if (Object.keys(data).length === 0) throw badRequest('Provide at least one artwork field to update');
+    if (!(await Artwork.update(id, data))) throw notFound('Artwork not found');
+    res.json(await Artwork.getById(id));
+};
+
+exports.delete = async (req, res) => {
+    if (!(await Artwork.delete(validation.identifier(req.params.id)))) {
+        throw notFound('Artwork not found');
     }
+    res.status(204).end();
 };

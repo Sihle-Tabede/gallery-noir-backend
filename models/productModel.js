@@ -1,74 +1,107 @@
 const db = require('../config/db');
+const {
+    deleteRecord,
+    identifierWhere,
+    parseJson,
+    updateRecord
+} = require('./queryHelpers');
+
+const fields = [
+    'id',
+    'slug',
+    'name',
+    'description',
+    'price',
+    'stock',
+    'image_url',
+    'category',
+    'colors',
+    'sizes',
+    'featured',
+    'display_order',
+    'created_at',
+    'updated_at'
+].join(', ');
+
+const mapProduct = (row) => row && ({
+    ...row,
+    price: Number(row.price),
+    image: row.image_url,
+    type: row.category,
+    colors: parseJson(row.colors, []),
+    sizes: parseJson(row.sizes, []),
+    featured: Boolean(row.featured)
+});
+
+const getById = async (identifier) => {
+    const where = identifierWhere(identifier);
+    const result = await db.query(
+        'SELECT ' + fields + ' FROM products WHERE ' + where.sql + ' LIMIT 1',
+        where.params
+    );
+    return mapProduct(result.rows[0]);
+};
 
 const Product = {
-    // Get all products (with optional category filter)
     getAll: async (category = null) => {
-        let sql = 'SELECT * FROM products ORDER BY created_at DESC';
-        const params = [];
-        if (category) {
-            sql = 'SELECT * FROM products WHERE category = ? ORDER BY created_at DESC';
-            params.push(category);
-        }
-        const [rows] = await db.query(sql, params);
-        return rows;
-    },
-
-    // Get single product
-    getById: async (id) => {
-        const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
-        return rows[0];
-    },
-
-    // Get products by category (specific helper)
-    getByCategory: async (category) => {
-        const [rows] = await db.query(
-            'SELECT * FROM products WHERE category = ? AND stock > 0',
-            [category]
+        const where = category ? ' WHERE category = $1' : '';
+        const result = await db.query(
+            'SELECT ' + fields + ' FROM products' + where
+            + ' ORDER BY featured DESC, display_order ASC, created_at DESC',
+            category ? [category] : []
         );
-        return rows;
+        return result.rows.map(mapProduct);
     },
 
-    // Create product (admin)
+    getById,
+
     create: async (data) => {
-        const { name, description, price, stock, image_url, category } = data;
-        const [result] = await db.query(
-            'INSERT INTO products (name, description, price, stock, image_url, category) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, description, price, stock || 0, image_url, category]
+        const result = await db.query(
+            'INSERT INTO products '
+            + '(slug, name, description, price, stock, image_url, category, colors, sizes, featured, display_order) '
+            + 'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id',
+            [
+                data.slug,
+                data.name,
+                data.description,
+                data.price,
+                data.stock,
+                data.image_url,
+                data.category,
+                JSON.stringify(data.colors),
+                JSON.stringify(data.sizes),
+                data.featured,
+                data.display_order
+            ]
         );
-        return result.insertId;
+        return result.rows[0].id;
     },
 
-    // Update product (admin)
-    update: async (id, data) => {
-        const { name, description, price, stock, image_url, category } = data;
-        const [result] = await db.query(
-            `UPDATE products SET 
-                name = COALESCE(?, name), 
-                description = COALESCE(?, description), 
-                price = COALESCE(?, price), 
-                stock = COALESCE(?, stock), 
-                image_url = COALESCE(?, image_url), 
-                category = COALESCE(?, category) 
-            WHERE id = ?`,
-            [name, description, price, stock, image_url, category, id]
+    update: (identifier, data) => {
+        const serialized = { ...data };
+        if (Object.hasOwn(serialized, 'colors')) serialized.colors = JSON.stringify(serialized.colors);
+        if (Object.hasOwn(serialized, 'sizes')) serialized.sizes = JSON.stringify(serialized.sizes);
+        return updateRecord(
+            'products',
+            identifier,
+            serialized,
+            [
+                'slug',
+                'name',
+                'description',
+                'price',
+                'stock',
+                'image_url',
+                'category',
+                'colors',
+                'sizes',
+                'featured',
+                'display_order'
+            ]
         );
-        return result.affectedRows > 0;
     },
 
-    // Update stock specifically (used when an order is placed)
-    updateStock: async (id, quantitySold) => {
-        const [result] = await db.query(
-            'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
-            [quantitySold, id, quantitySold]
-        );
-        return result.affectedRows > 0;
-    },
-
-    // Delete product (admin)
-    delete: async (id) => {
-        const [result] = await db.query('DELETE FROM products WHERE id = ?', [id]);
-        return result.affectedRows > 0;
-    }
+    delete: (identifier) => deleteRecord('products', identifier)
 };
 
 module.exports = Product;

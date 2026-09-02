@@ -6,8 +6,9 @@ module.exports = async (req, res, next) => {
         if (!user || user.role !== 'admin') {
             return res.status(403).json({ message: 'Admin access required' });
         }
-        next();
+        req.user = { ...req.user, ...user };
+        return next();
     } catch (err) {
-        next(err);
+        return next(err);
     }
 };

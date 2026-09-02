@@ -1,23 +1,45 @@
 {
-  "name": "gallerynoir-backend",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "gallery-noir-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Production-ready REST API for Gallery Noir.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "db:setup": "node scripts/applySchema.js",
+    "db:check": "node scripts/checkDatabase.js",
+    "lint": "eslint .",
+    "test": "node --test",
+    "check": "npm run lint && npm test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "gallery-noir",
+    "express",
+    "postgresql",
+    "pg",
+    "rest-api"
+  ],
+  "license": "UNLICENSED",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.22.5"
+    "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.0",
+    "globals": "^17.6.0",
     "nodemon": "^3.1.14"
   }
 }

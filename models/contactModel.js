@@ -1,34 +1,33 @@
 const db = require('../config/db');
 
 const Contact = {
-    // Submit a contact form (public)
-    create: async (data) => {
-        const { name, email, message } = data;
-        const [result] = await db.query(
-            'INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)',
-            [name, email, message]
+    create: async ({ name, email, topic, message }) => {
+        const result = await db.query(
+            'INSERT INTO contacts (name, email, topic, message) '
+            + 'VALUES ($1, $2, $3, $4) RETURNING id',
+            [name, email, topic, message]
         );
-        return result.insertId;
+        return result.rows[0].id;
     },
 
-    // Get all submissions (admin dashboard)
     getAll: async () => {
-        const [rows] = await db.query(
-            'SELECT * FROM contacts ORDER BY created_at DESC'
+        const result = await db.query(
+            'SELECT id, name, email, topic, message, created_at FROM contacts ORDER BY created_at DESC'
         );
-        return rows;
+        return result.rows;
     },
 
-    // Get single submission (admin)
     getById: async (id) => {
-        const [rows] = await db.query('SELECT * FROM contacts WHERE id = ?', [id]);
-        return rows[0];
+        const result = await db.query(
+            'SELECT id, name, email, topic, message, created_at FROM contacts WHERE id = $1 LIMIT 1',
+            [id]
+        );
+        return result.rows[0];
     },
 
-    // Delete submission (admin)
     delete: async (id) => {
-        const [result] = await db.query('DELETE FROM contacts WHERE id = ?', [id]);
-        return result.affectedRows > 0;
+        const result = await db.query('DELETE FROM contacts WHERE id = $1', [id]);
+        return result.rowCount > 0;
     }
 };
 

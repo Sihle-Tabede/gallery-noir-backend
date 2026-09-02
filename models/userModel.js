@@ -1,45 +1,53 @@
 const db = require('../config/db');
 
+const publicFields = 'id, email, full_name, phone, role, created_at, updated_at';
+
 const User = {
-    // Find user by email (for login/registration check)
-    findByEmail: async (email) => {
-        const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        return rows[0]; // returns undefined if not found
+    findAuthByEmail: async (email) => {
+        const result = await db.query(
+            'SELECT ' + publicFields + ', password_hash FROM users WHERE email = $1 LIMIT 1',
+            [email]
+        );
+        return result.rows[0];
     },
 
-    // Find user by ID (excludes password hash for safety)
+    findByEmail: async (email) => {
+        const result = await db.query(
+            'SELECT ' + publicFields + ' FROM users WHERE email = $1 LIMIT 1',
+            [email]
+        );
+        return result.rows[0];
+    },
+
     findById: async (id) => {
-        const [rows] = await db.query(
-            'SELECT id, email, full_name, role, created_at FROM users WHERE id = ?',
+        const result = await db.query(
+            'SELECT ' + publicFields + ' FROM users WHERE id = $1 LIMIT 1',
             [id]
         );
-        return rows[0];
+        return result.rows[0];
     },
 
-    // Create a new user
-    create: async (userData) => {
-        const { email, password_hash, full_name, role } = userData;
-        const [result] = await db.query(
-            'INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)',
-            [email, password_hash, full_name, role || 'customer']
+    create: async ({ email, password_hash, full_name, phone, role = 'customer' }) => {
+        const result = await db.query(
+            'INSERT INTO users (email, password_hash, full_name, phone, role) '
+            + 'VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [email, password_hash, full_name, phone, role]
         );
-        return result.insertId; // returns the new user's ID
+        return result.rows[0].id;
     },
 
-    // Update user profile (admin or self)
     update: async (id, updates) => {
-        const { full_name, email } = updates;
-        const [result] = await db.query(
-            'UPDATE users SET full_name = ?, email = ? WHERE id = ?',
-            [full_name, email, id]
-        );
-        return result.affectedRows > 0;
-    },
+        const allowedFields = ['email', 'full_name', 'phone'];
+        const fields = allowedFields.filter((field) => Object.hasOwn(updates, field));
+        if (fields.length === 0) return false;
 
-    // Delete user (admin only)
-    delete: async (id) => {
-        const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
-        return result.affectedRows > 0;
+        const setClause = fields.map((field, index) => field + ' = $' + (index + 1)).join(', ');
+        const values = fields.map((field) => updates[field]);
+        const result = await db.query(
+            'UPDATE users SET ' + setClause + ' WHERE id = $' + (fields.length + 1),
+            [...values, id]
+        );
+        return result.rowCount > 0;
     }
 };
 
