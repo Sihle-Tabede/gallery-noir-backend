@@ -47,6 +47,15 @@ app.use('/api', rateLimit({
     legacyHeaders: false
 }));
 
+app.get('/', (_req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'gallery-noir-api',
+        health: '/api/health',
+        readiness: '/api/health/ready'
+    });
+});
+
 app.use('/api', apiRoutes);
 app.use(notFound);
 app.use(errorHandler);

@@ -17,8 +17,14 @@ const startupErrorMessage = (error) => {
 const start = async () => {
     await db.ping();
 
-    server = app.listen(env.port, () => {
-        console.log('Gallery Noir API listening on port ' + env.port + ' (' + env.nodeEnv + ')');
+    server = app.listen(env.port, '0.0.0.0', () => {
+        console.log(
+            'Gallery Noir API listening on 0.0.0.0:'
+            + env.port
+            + ' ('
+            + env.nodeEnv
+            + ')'
+        );
     });
 };
 

@@ -230,6 +230,9 @@ deployed frontend URL to `CORS_ORIGINS`, and configure the production
 `DATABASE_URL`. Run `npm run db:setup` once against the production database
 before starting the deployed API.
 
+For the exact Render settings, environment variables, health checks, and
+Netlify connection steps, see [`RENDER_DEPLOYMENT.md`](./RENDER_DEPLOYMENT.md).
+
 Payment capture, email delivery, media upload/storage, password reset, and email
 verification remain real-provider integration points and are intentionally not
 faked.

@@ -29,6 +29,18 @@ test('health endpoint reports the API as alive', async () => {
     });
 });
 
+test('root endpoint identifies the deployed API', async () => {
+    await withServer(async (baseUrl) => {
+        const response = await fetch(baseUrl);
+        const body = await response.json();
+
+        assert.equal(response.status, 200);
+        assert.equal(body.status, 'ok');
+        assert.equal(body.service, 'gallery-noir-api');
+        assert.equal(body.health, '/api/health');
+    });
+});
+
 test('unknown routes return a consistent JSON error', async () => {
     await withServer(async (baseUrl) => {
         const response = await fetch(baseUrl + '/api/not-a-route');
