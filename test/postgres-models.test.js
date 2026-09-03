@@ -42,6 +42,7 @@ test('PostgreSQL models preserve the GalleryNoir API data contract', async (cont
     const Blog = require('../models/blogModel');
     const Contact = require('../models/contactModel');
     const Inquiry = require('../models/inquiryModel');
+    const Media = require('../models/mediaModel');
     const Order = require('../models/orderModel');
     const Product = require('../models/productModel');
 
@@ -53,6 +54,19 @@ test('PostgreSQL models preserve the GalleryNoir API data contract', async (cont
     });
     assert.equal(userId, 1);
     assert.equal((await User.findByEmail('collector@example.com')).role, 'customer');
+
+    await database.query(
+        'INSERT INTO media_assets (path, mime_type, content, sha256, size_bytes) '
+        + 'VALUES ($1, $2, $3, $4, $5)',
+        [
+            '/media/artworks/test.webp',
+            'image/webp',
+            new Uint8Array([82, 73, 70, 70]),
+            'b'.repeat(64),
+            4
+        ]
+    );
+    assert.equal((await Media.findByPath('/media/artworks/test.webp')).mime_type, 'image/webp');
 
     await User.update(userId, { full_name: 'Noir Collector' });
     assert.equal((await User.findById(userId)).full_name, 'Noir Collector');

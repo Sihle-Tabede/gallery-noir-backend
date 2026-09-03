@@ -113,6 +113,32 @@ test('frontend request and response contracts work through the complete API', as
         assert.equal(profile.response.status, 200);
         assert.equal(profile.body.id, registration.body.user.id);
 
+        const mediaContent = new Uint8Array([82, 73, 70, 70, 1, 2, 3, 4]);
+        await database.query(
+            'INSERT INTO media_assets (path, mime_type, content, sha256, size_bytes) '
+            + 'VALUES ($1, $2, $3, $4, $5)',
+            [
+                '/media/artworks/test-image.webp',
+                'image/webp',
+                mediaContent,
+                'c'.repeat(64),
+                mediaContent.length
+            ]
+        );
+
+        const media = await fetch(baseUrl + '/api/media/artworks/test-image.webp');
+        assert.equal(media.status, 200);
+        assert.equal(media.headers.get('content-type'), 'image/webp');
+        assert.deepEqual(
+            new Uint8Array(await media.arrayBuffer()),
+            mediaContent
+        );
+
+        const cachedMedia = await fetch(baseUrl + '/api/media/artworks/test-image.webp', {
+            headers: { 'if-none-match': media.headers.get('etag') }
+        });
+        assert.equal(cachedMedia.status, 304);
+
         const contact = await requestJson(baseUrl + '/api/contacts', {
             method: 'POST',
             body: JSON.stringify({

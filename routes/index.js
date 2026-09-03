@@ -8,6 +8,7 @@ const blogRoutes = require('./blogRoutes');
 const inquiryRoutes = require('./inquiryRoutes');
 const contactRoutes = require('./contactRoutes');
 const orderRoutes = require('./orderRoutes');
+const mediaRoutes = require('./mediaRoutes');
 
 const router = express.Router();
 
@@ -35,5 +36,6 @@ router.use('/blog', blogRoutes);
 router.use('/inquiries', inquiryRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/orders', orderRoutes);
+router.use('/media', mediaRoutes);
 
 module.exports = router;

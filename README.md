@@ -2,7 +2,7 @@
 
 Production-oriented REST API for the Gallery Noir React frontend. It provides
 authentication, artwork and merchandise catalogues, blog content, contact and
-collector inquiries, and transaction-safe orders.
+collector inquiries, database-backed media, and transaction-safe orders.
 
 The API contract remains compatible with the current GalleryNoir frontend. The
 database implementation is PostgreSQL through `pg`; MySQL is not required.
@@ -35,6 +35,7 @@ database implementation is PostgreSQL through `pg`; MySQL is not required.
 4. Apply and verify the schema:
 
        npm run db:setup
+       npm run db:seed-media
        npm run db:check
 
 5. Start the API:
@@ -99,6 +100,19 @@ Run the same setup commands:
     npm run db:check
     npm run dev
 
+## Option C: connect locally to the Render database
+
+Open `gallery-noir-db` in Render, select **Connect**, and copy the **External
+Database URL** into your local `.env`. Do not use the Internal Database URL on
+your computer; its `dpg-...-a` hostname is private to Render and causes
+`getaddrinfo ENOTFOUND` locally.
+
+    DATABASE_URL=PASTE_THE_EXTERNAL_DATABASE_URL_HERE
+    DB_SSL=true
+
+The deployed backend must continue using the Internal Database URL for faster,
+private communication inside Render.
+
 ## Application environment
 
 The remaining required settings are:
@@ -135,6 +149,7 @@ another port, add that exact origin to `CORS_ORIGINS` and restart the backend.
 | `npm run dev` | Start with automatic reload |
 | `npm start` | Start without automatic reload |
 | `npm run db:setup` | Apply the repeatable PostgreSQL schema |
+| `npm run db:seed-media` | Synchronize changed seed images into PostgreSQL |
 | `npm run db:check` | Verify every required table and column |
 | `npm run lint` | Run static code checks |
 | `npm test` | Run API, validation, and embedded PostgreSQL schema tests |
@@ -151,6 +166,7 @@ React application.
 | --- | --- | --- |
 | `GET /api/health` | Public | Liveness check |
 | `GET /api/health/ready` | Public | PostgreSQL readiness check |
+| `GET /api/media/:nested-path` | Public | Stream an image stored in PostgreSQL |
 | `POST /api/auth/register` | Public | Create a collector account |
 | `POST /api/auth/login` | Public | Sign in |
 | `GET /api/auth/me` | Signed in | Current profile |
@@ -202,6 +218,8 @@ Aliases are derived at response time and are not duplicated in PostgreSQL.
 - Database constraint codes are translated into consistent API errors.
 - The schema can be applied repeatedly without duplicating tables, indexes, or
   triggers.
+- Optimised images are stored as PostgreSQL `BYTEA` values in `media_assets`.
+  The seed command uses SHA-256 hashes, so unchanged images are not rewritten.
 
 ## Security and reliability
 
@@ -233,6 +251,5 @@ before starting the deployed API.
 For the exact Render settings, environment variables, health checks, and
 Netlify connection steps, see [`RENDER_DEPLOYMENT.md`](./RENDER_DEPLOYMENT.md).
 
-Payment capture, email delivery, media upload/storage, password reset, and email
-verification remain real-provider integration points and are intentionally not
-faked.
+Payment capture, email delivery, password reset, and email verification remain
+real-provider integration points and are intentionally not faked.

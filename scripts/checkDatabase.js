@@ -2,6 +2,7 @@ const db = require('../config/db');
 
 const requiredSchema = {
     users: ['id', 'email', 'password_hash', 'full_name', 'phone', 'role'],
+    media_assets: ['path', 'mime_type', 'content', 'sha256', 'size_bytes'],
     artworks: [
         'id',
         'slug',

@@ -21,8 +21,8 @@ hosted PostgreSQL database; a PostgreSQL server running on your own computer at
    comma-separated list only when needed.
 4. Set `DATABASE_URL` to the hosted PostgreSQL URL. Keep the URL secret.
 5. Allow Render to create the service. The configured build installs locked
-   dependencies, applies the repeatable schema, and checks the schema before
-   starting the API.
+   dependencies, applies the repeatable schema, synchronizes changed images
+   into PostgreSQL, and checks the schema before starting the API.
 
 The generated JWT secret is managed by Render. The service binds to Render's
 `PORT` on `0.0.0.0`, and Render checks `/api/health/ready`.
@@ -36,7 +36,7 @@ Use these settings if repairing an existing service instead of using Blueprint:
 | Language | Node |
 | Branch | `main` |
 | Root Directory | Leave empty when `package.json` is at the repo root |
-| Build Command | `npm ci && npm run db:setup && npm run db:check` |
+| Build Command | `npm ci && npm run db:setup && npm run db:seed-media && npm run db:check` |
 | Start Command | `npm start` |
 | Health Check Path | `/api/health/ready` |
 
@@ -47,7 +47,7 @@ Key field.
 ```dotenv
 NODE_ENV=production
 CORS_ORIGINS=https://your-exact-netlify-site.netlify.app
-DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
+DATABASE_URL=PASTE_THE_RENDER_INTERNAL_DATABASE_URL_HERE
 JWT_SECRET=replace_with_a_random_secret_of_at_least_32_characters
 JWT_EXPIRES_IN=7d
 JWT_ISSUER=gallery-noir-api
@@ -59,8 +59,9 @@ BCRYPT_ROUNDS=12
 ```
 
 Do not manually create a `PORT` variable. Render supplies it automatically.
-When a database URL already contains `sslmode=require`, no separate `DB_SSL`
-setting is needed.
+Do not add `DB_SSL=true` when the service uses Render's Internal Database URL.
+For a local computer using the External Database URL, set `DB_SSL=true` in the
+local `.env` instead.
 
 ## Verify the deployed API
 
@@ -88,7 +89,9 @@ build, so changing it without rebuilding does not update the deployed frontend.
 
 ## Important data note
 
-The schema setup creates the required tables but does not copy local PostgreSQL
-records. A new hosted database starts with no users, artworks, products, posts,
-or orders. Migrate important local data separately or add catalogue records
-through the protected admin API.
+The schema setup preserves existing users, orders, and other records. The media
+seed step inserts new images and updates only images whose SHA-256 content hash
+changed. It does not delete user-created data.
+
+For the complete GitHub-to-live workflow and the difference between Render's
+Internal and External database URLs, see `LIVE_DEPLOYMENT_GUIDE.md`.

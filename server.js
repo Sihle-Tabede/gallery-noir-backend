@@ -5,6 +5,9 @@ const env = require('./config/env');
 let server;
 
 const startupErrorMessage = (error) => {
+    if (error.code === 'ENOTFOUND') {
+        return 'The database hostname cannot be resolved. Render Internal Database URLs only work inside Render; use the External Database URL when running this backend on your computer.';
+    }
     if (error.message?.trim()) return error.message;
     if (error.code === 'ECONNREFUSED') {
         return env.database.url

@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "db:setup": "node scripts/applySchema.js",
+    "db:seed-media": "node scripts/seedMedia.js",
     "db:check": "node scripts/checkDatabase.js",
     "lint": "eslint .",
     "test": "node --test",

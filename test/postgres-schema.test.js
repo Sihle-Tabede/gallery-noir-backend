@@ -8,6 +8,7 @@ const expectedTables = [
     'blog_posts',
     'contacts',
     'inquiries',
+    'media_assets',
     'order_items',
     'orders',
     'products',
@@ -73,6 +74,21 @@ test('PostgreSQL schema enforces catalogue and account rules', async (context) =
 
     assert.deepEqual(product.rows[0].colors, ['Charcoal', 'Ivory']);
     assert.deepEqual(product.rows[0].sizes, ['A3']);
+
+    const media = await database.query(
+        'INSERT INTO media_assets (path, mime_type, content, sha256, size_bytes) '
+        + 'VALUES ($1, $2, $3, $4, $5) RETURNING path, size_bytes',
+        [
+            '/media/test/sample.webp',
+            'image/webp',
+            new Uint8Array([82, 73, 70, 70]),
+            'a'.repeat(64),
+            4
+        ]
+    );
+
+    assert.equal(media.rows[0].path, '/media/test/sample.webp');
+    assert.equal(Number(media.rows[0].size_bytes), 4);
 
     await assert.rejects(
         database.query(

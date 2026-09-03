@@ -4,7 +4,8 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm ci && npm run db:setup && npm run db:check
+    branch: main
+    buildCommand: npm ci && npm run db:setup && npm run db:seed-media && npm run db:check
     startCommand: npm start
     healthCheckPath: /api/health/ready
     autoDeployTrigger: commit
