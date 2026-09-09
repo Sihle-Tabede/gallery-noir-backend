@@ -1,10 +1,11 @@
 const { AppError } = require('../utils/errors');
+const { verificationEmail } = require('./verificationEmail');
 
 exports.sendCode = async (email, code, purpose) => {
     if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
         throw new AppError(503, 'Email verification is unavailable. Please contact the studio.');
     }
-    const labels = { register: 'verify your email', login: 'sign in', reset: 'reset your password', email: 'confirm your new email' };
+
     try {
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -13,7 +14,7 @@ exports.sendCode = async (email, code, purpose) => {
             body: JSON.stringify({
                 from: process.env.EMAIL_FROM, to: [email],
                 subject: 'Your Gallery Noir verification code',
-                text: `GALLERY NOIR\n\nUse ${code} to ${labels[purpose]}. This code expires in 10 minutes and can only be used once.\n\nNever share this code. If you did not request it, ignore this email.`
+                ...verificationEmail(code, purpose)
             })
         });
         if (!response.ok) {
