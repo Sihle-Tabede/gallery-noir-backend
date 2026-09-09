@@ -5,8 +5,17 @@ const env = require('./env');
 types.setTypeParser(types.builtins.INT8, Number);
 types.setTypeParser(types.builtins.NUMERIC, Number);
 
-const connection = env.database.url
-    ? { connectionString: env.database.url }
+// pg URL SSL options otherwise overwrite the explicit TLS verification settings.
+let connectionString = env.database.url;
+if (connectionString && env.database.ssl) {
+    const url = new URL(connectionString);
+    for (const key of ['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert']) {
+        url.searchParams.delete(key);
+    }
+    connectionString = url.toString();
+}
+const connection = connectionString
+    ? { connectionString }
     : {
         host: env.database.host,
         port: env.database.port,

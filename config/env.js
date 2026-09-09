@@ -44,6 +44,33 @@ if (isProduction && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 
     throw new Error('JWT_SECRET must contain at least 32 characters in production');
 }
 
+// Fail closed: production must never fall back to the local DB defaults.
+if (isProduction) {
+    let databaseUrl;
+    try { databaseUrl = new URL(process.env.DATABASE_URL); } catch {
+        throw new Error('DATABASE_URL is required and must be a PostgreSQL URL in production');
+    }
+    if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)
+        || !databaseUrl.hostname || databaseUrl.pathname.length < 2
+        || /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(databaseUrl.hostname)
+        || databaseUrl.hostname.endsWith('.localhost')) {
+        throw new Error('DATABASE_URL must identify the hosted production PostgreSQL database');
+    }
+    if (!readBoolean('DB_SSL', true) || !readBoolean('DB_SSL_REJECT_UNAUTHORIZED', true)) {
+        throw new Error('Production requires verified database TLS');
+    }
+    for (const origin of corsOrigins) {
+        let url;
+        try { url = new URL(origin); } catch {
+            throw new Error('CORS_ORIGINS must contain valid HTTPS origins');
+        }
+        if (url.protocol !== 'https:' || url.origin !== origin
+            || /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(url.hostname)) {
+            throw new Error('CORS_ORIGINS must contain exact public HTTPS origins without paths or trailing slashes');
+        }
+    }
+}
+
 const env = Object.freeze({
     nodeEnv: process.env.NODE_ENV || 'development',
     isProduction,
@@ -59,7 +86,7 @@ const env = Object.freeze({
         connectionLimit: readInteger('DB_CONNECTION_LIMIT', 10, 1, 50),
         connectionTimeoutMs: readInteger('DB_CONNECTION_TIMEOUT_MS', 10000, 1000, 60000),
         idleTimeoutMs: readInteger('DB_IDLE_TIMEOUT_MS', 30000, 1000, 300000),
-        ssl: readBoolean('DB_SSL', false),
+        ssl: readBoolean('DB_SSL', isProduction),
         sslRejectUnauthorized: readBoolean('DB_SSL_REJECT_UNAUTHORIZED', true)
     },
     jwt: {

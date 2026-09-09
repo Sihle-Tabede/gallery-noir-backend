@@ -1,0 +1,11 @@
+Modified: .env.example
+Added: .node-version
+Modified: RENDER_DEPLOYMENT.md
+Added: VERIFICATION.md
+Modified: config/db.js
+Modified: config/env.js
+Modified: package-lock.json
+Modified: package.json
+Modified: render.yaml
+Modified: scripts/applySchema.js
+Added: test/production-config.test.js

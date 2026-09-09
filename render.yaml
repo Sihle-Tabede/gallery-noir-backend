@@ -5,11 +5,17 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: npm ci && npm run db:setup && npm run db:seed-media && npm run db:check
-    startCommand: npm start
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run db:check && npm start
     healthCheckPath: /api/health/ready
     autoDeployTrigger: commit
     envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: "true"
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGINS
