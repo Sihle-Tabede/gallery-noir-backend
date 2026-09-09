@@ -1,3 +1,9 @@
+> Latest backend change: see LOGIN_FIX.md for repeat-login cooldown and eight-character password policy. Frontend update is pending re-upload.
+
+> For local environment setup, follow [START_HERE.md](START_HERE.md). It includes the new automatic setup commands.
+
+> Account security upgrade: follow [SECURITY_UPGRADE.md](SECURITY_UPGRADE.md) for the current OTP flow, migration, email settings and deployment commands. It supersedes earlier authentication and start-command instructions below.
+
 # Gallery Noir Backend — PostgreSQL
 
 Production-oriented REST API for the Gallery Noir React frontend. It provides

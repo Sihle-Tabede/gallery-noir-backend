@@ -16,3 +16,5 @@ uploads/
 storage/
 tmp/
 temp/
+
+!.env.render.example

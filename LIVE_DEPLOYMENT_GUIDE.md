@@ -1,3 +1,5 @@
+> Account security upgrade: follow [SECURITY_UPGRADE.md](SECURITY_UPGRADE.md) for the current OTP flow, migration, email settings and deployment commands. It supersedes earlier authentication and start-command instructions below.
+
 # Gallery Noir live deployment and database media
 
 ## Live architecture

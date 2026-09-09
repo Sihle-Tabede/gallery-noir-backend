@@ -1,7 +1,10 @@
 const db = require('../config/db');
 
 const requiredSchema = {
-    users: ['id', 'email', 'password_hash', 'full_name', 'phone', 'role'],
+    users: ['id', 'email', 'password_hash', 'full_name', 'phone', 'role', 'session_version', 'email_verified_at'],
+    auth_challenges: ['id', 'email', 'purpose', 'code_hash', 'payload', 'attempts', 'expires_at'],
+    auth_delivery_limits: ['email_key', 'sends', 'last_sent_at'],
+    wishlists: ['user_id', 'slug'],
     media_assets: ['path', 'mime_type', 'content', 'sha256', 'size_bytes'],
     artworks: [
         'id',

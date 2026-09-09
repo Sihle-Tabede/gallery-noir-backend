@@ -67,6 +67,8 @@ test('frontend request and response contracts work through the complete API', as
         }
     };
 
+    let sentCode;
+    require('../services/email').sendCode = async (_email,code) => { sentCode=code; };
     const app = require('../app');
 
     await withServer(app, async (baseUrl) => {
@@ -79,17 +81,23 @@ test('frontend request and response contracts work through the complete API', as
             'http://localhost:5173'
         );
 
-        const registration = await requestJson(baseUrl + '/api/auth/register', {
+        let registration = await requestJson(baseUrl + '/api/auth/register', {
             method: 'POST',
             body: JSON.stringify({
                 email: 'collector@example.com',
-                password: 'Gallery123!',
+                password: 'orchid river bronze constellation',
                 full_name: 'Gallery Collector',
                 phone: '0821234567'
             })
         });
 
-        assert.equal(registration.response.status, 201);
+        assert.equal(registration.response.status, 202);
+        assert.equal(registration.body.token, undefined);
+        registration = await requestJson(baseUrl + '/api/auth/verify', {
+            method: 'POST', body: JSON.stringify({challenge_id:registration.body.challenge_id,code:sentCode})
+        });
+        assert.equal(registration.response.status, 200);
+        await database.exec('DELETE FROM auth_delivery_limits');
         assert.equal(registration.body.user.full_name, 'Gallery Collector');
         assert.equal(registration.body.user.phone, '0821234567');
         assert.ok(registration.body.token);
@@ -97,12 +105,16 @@ test('frontend request and response contracts work through the complete API', as
         const token = registration.body.token;
         const authorization = { authorization: 'Bearer ' + token };
 
-        const login = await requestJson(baseUrl + '/api/auth/login', {
+        let login = await requestJson(baseUrl + '/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({
                 email: 'collector@example.com',
-                password: 'Gallery123!'
+                password: 'orchid river bronze constellation'
             })
+        });
+        assert.equal(login.response.status, 202);
+        login = await requestJson(baseUrl + '/api/auth/verify', {
+            method:'POST',body:JSON.stringify({challenge_id:login.body.challenge_id,code:sentCode})
         });
         assert.equal(login.response.status, 200);
         assert.equal(login.body.user.email, 'collector@example.com');

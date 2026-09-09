@@ -38,4 +38,6 @@ router.use('/contacts', contactRoutes);
 router.use('/orders', orderRoutes);
 router.use('/media', mediaRoutes);
 
+router.use('/wishlist', require('./wishlistRoutes'));
+
 module.exports = router;

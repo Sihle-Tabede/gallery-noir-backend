@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+router.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 const orderController = require('../controllers/orderController');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');

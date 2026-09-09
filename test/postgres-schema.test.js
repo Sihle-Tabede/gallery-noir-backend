@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 
 const expectedTables = [
     'artworks',
+    'auth_challenges',
+    'auth_delivery_limits',
     'blog_posts',
     'contacts',
     'inquiries',
@@ -12,7 +14,8 @@ const expectedTables = [
     'order_items',
     'orders',
     'products',
-    'users'
+    'users',
+    'wishlists'
 ];
 
 test('PostgreSQL schema is valid, complete, and repeatable', async (context) => {

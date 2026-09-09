@@ -6,7 +6,7 @@ services:
     region: frankfurt
     branch: main
     buildCommand: npm ci --omit=dev
-    startCommand: npm run db:check && npm start
+    startCommand: npm run db:migrate:security && npm run db:check && npm start
     healthCheckPath: /api/health/ready
     autoDeployTrigger: commit
     envVars:
@@ -25,7 +25,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: 7d
+        value: 1h
       - key: JWT_ISSUER
         value: gallery-noir-api
       - key: JWT_AUDIENCE
@@ -38,3 +38,7 @@ services:
         value: "30000"
       - key: BCRYPT_ROUNDS
         value: "12"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false

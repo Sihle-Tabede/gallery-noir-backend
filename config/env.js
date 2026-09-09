@@ -1,6 +1,8 @@
 const dotenv = require('dotenv');
 
-dotenv.config({ quiet: true });
+// Resolve from the backend folder, regardless of the terminal working directory.
+const path = require('node:path');
+dotenv.config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -91,7 +93,7 @@ const env = Object.freeze({
     },
     jwt: {
         secret: process.env.JWT_SECRET || 'development-only-secret-change-before-deploying',
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+        expiresIn: process.env.JWT_EXPIRES_IN || '1h',
         issuer: process.env.JWT_ISSUER || 'gallery-noir-api',
         audience: process.env.JWT_AUDIENCE || 'gallery-noir-web'
     },

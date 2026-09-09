@@ -1,6 +1,6 @@
 const db = require('../config/db');
 
-const publicFields = 'id, email, full_name, phone, role, created_at, updated_at';
+const publicFields = 'id, email, full_name, phone, role, created_at, updated_at, email_verified_at, session_version';
 
 const User = {
     findAuthByEmail: async (email) => {

@@ -12,7 +12,11 @@
     "db:check": "node scripts/checkDatabase.js",
     "lint": "eslint .",
     "test": "node --test",
-    "check": "npm run lint && npm test"
+    "check": "npm run lint && npm test",
+    "db:migrate:security": "node scripts/migrateSecurity.js",
+    "setup": "node scripts/setupEnv.js",
+    "predev": "npm run setup && npm run env:check",
+    "env:check": "node scripts/checkEnv.js"
   },
   "engines": {
     "node": ">=24.0.0 <25.0.0"

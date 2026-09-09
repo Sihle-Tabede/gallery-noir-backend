@@ -33,12 +33,13 @@ const errorHandler = (error, req, res, next) => {
         level: 'error',
         request_id: req.id,
         method: req.method,
-        path: req.originalUrl,
+        path: req.path,
         status,
-        message: error.message,
+        message: env.isProduction ? message : error.message,
         stack: env.isProduction ? undefined : error.stack
     }));
 
+    if (status === 429 && normalized.details?.retry_after) res.set('Retry-After', String(normalized.details.retry_after));
     res.status(status).json({
         message,
         request_id: req.id,
